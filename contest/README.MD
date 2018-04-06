@@ -11,3 +11,8 @@ Scaler -> 例如:  MaxAbsScaler / MinMaxScaler / StandardScaler
 SelectKBest -> 特征选择 
 
 Estimator -> 这个就是常说的 模型，例如LogisticRegressor,lightgbm.LGBMRegressor
+
+其他重要的数据转换，如下： 
+
+sklearn.preprocessing.OneHotEncoder
+sklearn.preprocessing.LabelEncoder
