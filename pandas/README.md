@@ -39,5 +39,14 @@ df['column_bin'] = pd.qcut( df['column'] , np.linspace( 0 ,1 , 11  ) ,duplicates
 
 df['column_bin_fac'] = pd.factorize( df['column_bin'], sort=True)  
 ```
+# Check Correlation
 
+检查数据相关性 是机器学习特征识别的 基础工作，在了解数据的基础上才能够针对性的设计出解决方案 
 
+pd.corr(df)  可以一次性输出df 所有列的相关系数， 
+
+[corr](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.corr.html)
+
+# 课后习题
+
+参见 data/README.md 这份数据在后续广告的课程中也会用到，来自阿里巴巴平台的真实数据
