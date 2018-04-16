@@ -1,7 +1,12 @@
 # coding: utf-8
 import pandas as pd
 import time
-
+import logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename='ad.log',
+                    filemode='a')
 
 def convdate(t):
     return time.strftime('%Y-%m-%d', time.localtime(t))
@@ -55,9 +60,8 @@ def augment_convrate(df):
             print target_df.head()
         buf.append(target_df)
 
-
-    conv_df = pd.concat(buf, axis = 0)
-    conv_df.to_csv('conv.csv',sep=' ', index=False)
+    # Tips : reset_index is necessary .
+    conv_df = pd.concat(buf, axis = 0).reset_index(drop=True)
     return conv_df
 def make_instant(df):
     prev = -1
@@ -77,7 +81,7 @@ def make_instant(df):
         prev = cur
     df['recent_15minutes']=  buf
 
-    return df[['instance_id' , 'recent_15minutes']]
+    return df[['instance_id' , 'recent_15minutes']].reset_index(drop=True)
 
 def augment_instant_feature(df):
     """
@@ -87,7 +91,15 @@ def augment_instant_feature(df):
     """
     df = df #type:pd.DataFrame
     sorted_df = df.sort_values('context_timestamp')
-    ins_recent_df = sorted_df.groupby( ['user_id','item_id'])[['instance_id','context_timestamp']].apply(make_instant).reset_index(drop=True)
+    logging.info('augment_instant  sort ok ')
+    g = sorted_df.groupby(['user_id', 'item_id'])
+    logging.info('augment_instant  groupby  ok ')
+
+    ins_g = g[['instance_id','context_timestamp']].apply(make_instant)
+    logging.info('augment_instant  make_instant ok ')
+    ins_recent_df = ins_g.reset_index(drop=True)
+    logging.info('augment_instant  reset_index ok ')
+    logging.info('columns = {}'.format(ins_recent_df.columns))
 
     aug_df = pd.merge(df, ins_recent_df, on='instance_id')
     return aug_df
@@ -100,15 +112,17 @@ if __name__ == '__main__':
 
     next: make string sample and feature.
     """
-    df = pd.read_csv('round1_ijcai_18_train_20180301.txt',sep=' ',header=0)
+    df = pd.read_csv('data/round1_ijcai_18_train_20180301.txt',sep=' ',header=0)
 
     df['date'] = df['context_timestamp'].apply(lambda x : convdate(x))
 
     conv_df = augment_convrate(df)
+    logging.info('conv_df shape = {} '.format(conv_df.shape))
 
+    conv_df.to_csv('conv.csv', sep=' ', index=False)
     conv_instant_df = augment_instant_feature(conv_df)
     conv_instant_df.to_csv('conv_ins.csv',index=False,sep=' ')
-
+    logging.info('conv_instant_df shape = {}'.format(conv_instant_df.shape))
 
 
 
