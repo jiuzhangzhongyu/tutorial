@@ -1,0 +1,74 @@
+\documentclass{article}
+
+ 
+
+\begin{document}
+
+ 
+
+
+
+
+
+\begin{equation}
+{y_i}   \in  \{0,1\} ,  {p_i} =\frac{e^{pred_i}}{1+ e^{pred_i}}
+\end{equation}
+
+
+
+ 
+\begin{equation}
+	\frac{\partial p}{\partial pred} = p(1-p)
+\end{equation}
+
+\section{Initial}
+\begin{equation}
+\mathrm{L}(Y,pred) = -\sum({y_i}*pred - log(1+ e^{pred}))
+\end{equation}
+
+\begin{equation}
+g = \frac{\partial L}{\partial pred} = -\sum({y_i} - p)
+\end{equation}
+
+\begin{equation}
+\mathop{\arg\min}_{pred} \mathrm{L} (Y, pred) \Rightarrow  \frac{\partial L}{\partial pred} = 0 \Rightarrow pred = log\frac{{1_(yi=1)}}{{1_(yi=0)}} = log\frac{count(yi=1)}{count(yi=0)}
+\end{equation}
+
+\section{Build Tree, Focus on the leaf , a.k.a terminal region}
+\paragraph{NOTE}predi is the begin predict state of every sample on the tree beginning.delta is the leaf value.REMEMBER: We have predi , we need to get delta.
+\begin{equation}
+Y = \{{y_i}\}, \mathop{\arg\min}_{\delta} \mathrm{L} (Y, \{{pred_i} + {\delta}\})
+\end{equation}
+\newline 
+
+
+\begin{equation}
+\Rightarrow  using\  the\ second\ taylor\ expansion\ at\ {pred_i},\ then\ \frac{\partial L}{\partial {\delta}} = 0  
+\end{equation}
+\begin{equation}
+\Rightarrow {\delta} = - g/H,   {g_i} = \frac{\partial L}{\partial {pred_i}} = {y_i} - {p_i},  H = \frac{\partial {g_i}}{\partial {pred_i}} = - \frac{\partial {p_i}}{\partial {pred_i}} = - {p_i}(1-{p_i})
+\end{equation}
+
+\begin{equation}
+\Rightarrow  final,  {\delta}  =  \frac{ {y_i} - {p_i}}{{p_i}(1-{p_i})}
+\end{equation}
+
+
+On predicting,  use the followiong : 
+
+\begin{equation}
+{p_i} =\frac{e^{pred_i}}{1+ e^{pred_i}},   
+\end{equation}
+
+\begin{equation}
+where\ {pred_i} =  {pred_{t0}} + {\lambda} ( {pred_{t1}} + ... + {pred_{tn}});\ ti\ is\ tree_i , {\lambda}\ is\ learning-rate.
+\end{equation}
+
+
+\section{Inspire}
+\begin{itemize}  
+\item[-] Pick any leaf in the first tree, it maybe contains 10  or 100 train-samples,  How many y-values does the leaf contains?   How about the second tree?
+\item[-] When we have 100 trees ,every tree have 8 leaf , How many values we can predict in permutation? (Predict-Sapce) 
+\end{itemize}  
+\end{document}
+
