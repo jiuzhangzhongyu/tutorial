@@ -92,9 +92,11 @@ df['column_bin_fac'] = pd.factorize( df['column_bin'], sort=True)
 
 检查数据相关性 是机器学习特征识别的 基础工作，在了解数据的基础上才能够针对性的设计出解决方案 
 
-pd.corr(df)  可以一次性输出df 所有列的相关系数， 
+df.corr()  可以一次性输出df 所有列的相关系数， 
 
 [corr](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.corr.html)
+
+
 
 # 课后习题
 
