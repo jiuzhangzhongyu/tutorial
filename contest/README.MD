@@ -1,5 +1,7 @@
 # 教程
 [点击](https://www.jiuzhang.com/tutorial/ai-camp/500)
+
+cnn入门资料:   http://210.28.132.67/weixs/book/CNN_book.html 
 # 最佳实践入门
 
 核心概念： Pipeline
