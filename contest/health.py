@@ -1,7 +1,7 @@
 # encoding=utf-8
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
+# reload(sys)
+# sys.setdefaultencoding('utf-8')
 
 
 """
@@ -39,7 +39,6 @@ from sklearn.datasets import load_svmlight_file
 import lightgbm as lgb
 import re
 import pickle
-import subprocess
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
@@ -66,11 +65,47 @@ logging.basicConfig(level=logging.INFO,
                     filemode='a')
 
 def check_contain_chinese(check_str):
-    for ch in check_str.decode('utf-8'):
+    # for ch in check_str.decode('utf-8'):
+    for ch in check_str:
         if u'\u4e00' <= ch <= u'\u9fff':
             return True
     return False
+def replace_str(path, pathout):
+    fo = open(pathout, 'w')
+    with open(path, 'r') as f :
+        for L in f:
+            L = re.sub('"', '', L)
+            L = re.sub('nan','0', L)
+            us = L.strip().split(" ")
+            buf = [us[0]]
+            for i in range(1, len(us)):
+                k, v = us[i].split(':')
+                k = int(k)
+                v = float(v)
+                buf.append('{}:{}'.format(k,v))
 
+            fo.write(' '.join(buf) +'\n')
+def check_format(path):
+    with open(path, 'r') as f:
+        for L in f:
+            us = L.strip().split(' ')
+            try:
+                y = float(us[0])
+            except:
+                print(L)
+                raw_input('\t\tPress any ')
+
+            for i in range(1, len(us)):
+                k, v = us[i].split(':')
+                try:
+                    k = int(k)
+                    if k == 39865:
+                        print(us[i], float(v) )
+                    v = float(v)
+                except:
+                    print( L )
+                    raw_input('\t\t')
+    load_svmlight_file(path)
 Glossary = {}
 def _make_vid_X(df):
     """
@@ -86,7 +121,7 @@ def _make_vid_X(df):
         # row.vid  row.table_id  row.field_results  有的存在多个值.
         try:
             v = float(row.field_results)
-            str = '{}={}'.format(row.table_id, v)
+            str = '{}={}'.format(row.table_id, v)  ## gender=male
             buf.append(str)
         except:
             # if row.field_results
@@ -106,11 +141,12 @@ def _make_vid_X(df):
                         Glossary[temp] = Glossary[temp] + 1
                 else:
 
-                    temp = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+".decode("utf8"), "".decode("utf8"), temp)
+                    #temp = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+".decode("utf8"), "".decode("utf8"), temp)
+                    temp = re.sub("[\s+\.\!\/_,$%^*(+\"\']+|[+——！，。？、~@#￥%……&*（）]+", "", temp)
                     words = jieba.lcut(temp)
                     for w in words:
                         # print w
-                        str = u'{}={}'.format(row.table_id, w)
+                        str = u'{}={}'.format(row.table_id, w)   # 134=肺部  134=阴影  134=明显
                         buf.append(str)
             else:
                 t =  re.sub('\s+', '_' , temp)
@@ -243,8 +279,8 @@ def make_X():
 
     part1 = 'data/meinian_round1_data_part1_20180408.txt'
     part2 = 'data/meinian_round1_data_part2_20180408.txt'
-    df1 = pd.read_csv(part1, sep='$', encoding='utf-8', chunksize=100, iterator=True).next()
-    df2 = pd.read_csv(part2, sep='$', encoding='utf-8', chunksize=100, iterator=True).next()
+    # df1 = pd.read_csv(part1, sep='$', encoding='utf-8', chunksize=100, iterator=True).next()
+    # df2 = pd.read_csv(part2, sep='$', encoding='utf-8', chunksize=100, iterator=True).next()
 
 
     df1 = pd.read_csv(part1, sep='$', encoding='utf-8')
@@ -255,7 +291,9 @@ def make_X():
 
     df['field_results'] = df['field_results'].apply(_conv_field)
 
+    ################ KEY
     dfx = df.groupby('vid').apply(_make_vid_X)
+    ################ KEY
 
     dfx.to_csv('X.csv',sep=' ')
 
@@ -267,9 +305,9 @@ def make_libsvm_X():
     """
     X = pd.read_csv('X.csv', sep=' ', header=None)
     X.columns = ['vid', 'X']
-    fealist = init_feature_list()
-    fill_feature_dict(fealist, X )
-    transform_feature(fealist, X)
+    fealist = init_feature_list()  #初始化
+    fill_feature_dict(fealist, X ) #填充特征空间
+    transform_feature(fealist, X)  #转换成 计算机可读的  1:1  3:20
 
 
 def _local_metric(X, y ,col):
@@ -335,8 +373,10 @@ def make_estimator(df, col):
         print( df[col].describe())
 
     df[[col, 'sparse']].to_csv(libsvm, sep=' ', header=False,index=False)
-    subprocess.check_call('sed -i s/\\"//g {}'.format(libsvm),shell=True)
-    # subprocess.check_call('sed -i s/14406:未见异常/14406:2/g {}'.format(libsvm),shell=True)
+
+    replace_str(libsvm, libsvm+'ok')
+
+    libsvm = libsvm + 'ok'
     X, y = load_svmlight_file(libsvm, n_features=220000)
 
     if col == '血清甘油三酯':
@@ -389,7 +429,7 @@ def fit_and_test():
     test = pd.read_csv(test_path, encoding='gbk')
     #
 
-    X = pd.read_csv('X_libsvm.csv',header=0)
+    X = pd.read_csv('X_libsvm.csv',header=0).fillna(0)
     # X.columns = ['vid', 'X']
 
     df = pd.merge(train , X,  on = 'vid'  ) #没有丢失信息.
@@ -409,9 +449,9 @@ def fit_and_test():
 
     test[['y','sparse']].to_csv('test.libsvm',sep=' ',header=False,index=False)
 
-    subprocess.check_call('sed -i s/\\"//g test.libsvm', shell=True)
+    replace_str('test.libsvm', 'test.libsvm.ok')
     
-    X_test, _ = load_svmlight_file('test.libsvm',n_features=220000)
+    X_test, _ = load_svmlight_file('test.libsvm.ok',n_features=220000)
     for col in [u'收缩压', u'舒张压', u'血清甘油三酯', u'血清高密度脂蛋白', u'血清低密度脂蛋白']:
         if col in map:
             es = map[col]
@@ -431,7 +471,16 @@ def flow():
 
     logging.info("flow begin")
     identify_columns()
+
+    logging.info("make_X ing.  ")
+    # 生成 X.csv
+    make_X()
+
+    logging.info("make_libsvm X")
+    # 生成 X_libsvm.csv
     make_libsvm_X()
+    logging.info("fit and test")
+    # merge and fit
     fit_and_test()
     logging.info("flow end")
 
