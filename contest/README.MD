@@ -1,3 +1,5 @@
+# update log 
+20180528: support python 3.x  ; support both windows and linux . 
 # 教程
 [点击](https://www.jiuzhang.com/tutorial/ai-camp/500)
 
