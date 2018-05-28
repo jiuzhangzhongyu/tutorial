@@ -117,7 +117,7 @@ class Feature(object):
 
     def tryAdd(self, prefix,  feastr):
         """
-
+        填充feature space!!
         :param feastr:
         :param sep:
         :return:  True: 添加成功 False: 添加失败
@@ -131,9 +131,9 @@ class Feature(object):
             if self.type != FeatureType.BIN : return False
             if prefix == self.prefix:
                 if feastr in self.idmap:
-                    self.idcovermap[feastr] = self.idcovermap[feastr] + 1
+                    self.idcovermap[feastr] = self.idcovermap[feastr] + 1  # update feature cover count .
                 else:
-                    self.idmap[feastr] =len(self.idmap) + 1
+                    self.idmap[feastr] =len(self.idmap) + 1  # feature encoding !
                     self.idcovermap[feastr] = 1
                 return True
             else:
