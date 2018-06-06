@@ -44,7 +44,7 @@ def augment_convrate(df):
     for day in datebuf:
         date_pivot = pd.to_datetime(day)
         lag_days = build_date_buf(date_pivot, -3, 0 )
-        print day, lag_days
+        print (day, lag_days)
 
         lag_df = df[df['date'].isin(lag_days)]
         target_df = df[df['date'].isin([day])]
@@ -57,7 +57,7 @@ def augment_convrate(df):
 
             lag_g.columns = lagcols
             target_df = pd.merge(target_df, lag_g, on=cols, how='left').fillna(0)
-            print target_df.head()
+            print (target_df.head())
         buf.append(target_df)
 
     # Tips : reset_index is necessary .
@@ -65,14 +65,26 @@ def augment_convrate(df):
     return conv_df
 def make_instant(df):
     prev = -1
-    buf = []
+    # dist_buf:  time to first show !
+    #
+    dist_buf , prev_buf, buf = [], [], []
+    first_timestamp = -1
     for row in df.itertuples():
         cur = row.context_timestamp
         instance_id = row.instance_id
+
+        if first_timestamp == -1:
+            first_timestamp = row.context_timestamp
+
+        dist = cur - first_timestamp
+
+        dist_buf.append(dist)
+
         if prev == -1:
             buf.append( 1 )
+            prev_buf.append(0)
         else:
-
+            prev_buf.append(cur - prev)
             if cur - prev <= 15 * 60:
                 buf.append( buf[-1] + 1)
             else:
@@ -80,8 +92,29 @@ def make_instant(df):
 
         prev = cur
     df['recent_15minutes']=  buf
+    df['first_to_now'] = dist_buf
+    df['prev_to_now'] = prev_buf
 
-    return df[['instance_id' , 'recent_15minutes']].reset_index(drop=True)
+    return df[['instance_id' , 'first_to_now','prev_to_now', 'recent_15minutes']].reset_index(drop=True)
+def make_price_change(df):
+    """
+    deprecated!!!!!!
+    价格变动如何计算
+    """
+    prev = -1
+    buf = []
+    for row in df.itertuples():
+        cur = row.item_price_level
+        instance_id = row.instance_id
+        if prev == -1:
+            buf.append( 0 )
+        else:
+            buf.append( cur - prev )
+
+        prev = cur
+    df['price_change']=  buf
+
+    return df[['instance_id' , 'price_change']].reset_index(drop=True)
 
 def augment_instant_feature(df):
     """
@@ -112,7 +145,7 @@ if __name__ == '__main__':
 
     next: make string sample and feature.
     """
-    df = pd.read_csv('data/round1_ijcai_18_train_20180301.txt',sep=' ',header=0)
+    df = pd.read_csv('data/round1_ijcai_18_train_20180301.txt',sep=' ',header=0, nrows=100000)
 
     df['date'] = df['context_timestamp'].apply(lambda x : convdate(x))
 
