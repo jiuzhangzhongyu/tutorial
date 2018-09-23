@@ -30,7 +30,8 @@ def test_add_by_const():
     x3_val = 3 * np.ones(3)
     grad_x2_val= executor.run(feed_dict = {x2 : x2_val, x3: x3_val})
 
-    print(grad_x2_val)
+    print(grad_x2_val)   #Got dy/dx2  !!!
+
     # assert isinstance(y, ad.Node)
     # assert np.array_equal(y_val, x2_val + 5)
     # assert np.array_equal(grad_x2_val, np.ones_like(x2_val))

@@ -14,15 +14,15 @@ class Node(object):
                 e.g. self.const_attr=5 if this node is created by x+5.
             self.name: node name for debugging purposes.
         """
-        self.inputs = []
-        self.op = None
+        self.inputs = []   # inputs also Node!!   Node(a) + Node(b) = Node(c)
+        self.op = None  # self-define AddOp MulOP    Node(a) + Node(b)
         self.const_attr = None
         self.name = ""
 
-    def __add__(self, other):
+    def __add__(self, other): #  It is  + !!!!  Node(a) + Node(b)
         """Adding two nodes return a new node."""
         if isinstance(other, Node):
-            new_node = add_op(self, other)
+            new_node = add_op(self, other) # add_op is a object of AddOP!
         else:
             # Add by a constant stores the constant in the new node's const_attr field.
             # 'other' argument is a constant
@@ -40,10 +40,10 @@ class Node(object):
         return new_node
 
     # Allow left-hand-side add and multiply.
-    __radd__ = __add__
+    __radd__ = __add__  ##  a + b  5 + a : a+ => a.__add__   + a  | a.__radd__
     __rmul__ = __mul__
 
-    def __str__(self):
+    def __str__(self): ##  a = Node()  map[a] = xxx?
         """Allow print to display node name.""" 
         return self.name
 
@@ -56,7 +56,7 @@ def Variable(name):
     placeholder_node = placeholder_op()
     placeholder_node.name = name
     return placeholder_node
-
+#### base class!!
 class Op(object):
     """Op represents operations performed on nodes."""
     def __call__(self):
@@ -98,11 +98,13 @@ class Op(object):
         """
         raise NotImplementedError
 
+## subclass ! realop
 class AddOp(Op):
     """Op to element-wise add two nodes."""
+    ### add_op(node_a, node_b)   fun() => fun.__call__()
     def __call__(self, node_A, node_B):
         new_node = Op.__call__(self)
-        new_node.inputs = [node_A, node_B]
+        new_node.inputs = [node_A, node_B]  ##Build Graph!!
         new_node.name = "(%s+%s)" % (node_A.name, node_B.name)
         return new_node
 
@@ -110,17 +112,17 @@ class AddOp(Op):
         """Given values of two input nodes, return result of element-wise addition."""
         assert len(input_vals) == 2
         return input_vals[0] + input_vals[1]
-
+    #####   y = x1 + x2    [ dy/dx1   ,  dy/x2]
     def gradient(self, node, output_grad):
         """Given gradient of add node, return gradient contributions to each input."""
         return [output_grad, output_grad]
-
+#####  5 + Node(a)
 class AddByConstOp(Op):
     """Op to element-wise add a nodes by a constant."""
     def __call__(self, node_A, const_val):
         new_node = Op.__call__(self)
         new_node.const_attr = const_val
-        new_node.inputs = [node_A]
+        new_node.inputs = [node_A]  #build graph !!!!
         new_node.name = "(%s+%s)" % (node_A.name, str(const_val))
         return new_node
 
@@ -137,7 +139,7 @@ class MulOp(Op):
     """Op to element-wise multiply two nodes."""
     def __call__(self, node_A, node_B):
         new_node = Op.__call__(self)
-        new_node.inputs = [node_A, node_B]
+        new_node.inputs = [node_A, node_B]  #build graph !!!
         new_node.name = "(%s*%s)" % (node_A.name, node_B.name)
         return new_node
 
@@ -145,7 +147,11 @@ class MulOp(Op):
         """Given values of two input nodes, return result of element-wise multiplication."""
         assert len(input_vals) == 2
         return input_vals[0] * input_vals[1]
-
+    #### mulnode = Node(a) * Node(b)
+    #### dL/dmulnode = output_grad
+    #### dL/dnode_a = dL/dmulnode * dmulnode/dnode_a  = output_grad * node_b
+    #### dL/dnode_b = dL/dmulnode * dmulnode/dnode_b = output_grad * node_a
+    #### y = a * b  dy/da = b  dy/db= a
     def gradient(self, node, output_grad):
         """Given gradient of multiply node, return gradient contributions to each input."""
         return [node.inputs[1] * output_grad, node.inputs[0] * output_grad]
@@ -255,7 +261,7 @@ class OnesLikeOp(Op):
         return [zeroslike_op(node.inputs[0])]
 
 # Create global singletons of operators.
-add_op = AddOp()
+add_op = AddOp() ##Operator !!
 mul_op = MulOp()
 add_byconst_op = AddByConstOp()
 mul_byconst_op = MulByConstOp()
@@ -294,7 +300,7 @@ class Executor:
         node_val_results = [node_to_val_map[node] for node in self.eval_node_list]
         return node_val_results
 
-def gradients(output_node, node_list):
+def gradients(output_node, node_list):   #  douput_node/dnode_list
     """Take gradient of output node with respect to each node in node_list.
 
     Parameters
@@ -313,17 +319,26 @@ def gradients(output_node, node_list):
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = list(reversed(find_topo_sort([output_node])))
 
+    # 梯度初值 都是  0
     for node in reverse_topo_order:
         node_to_output_grad[node] = zeroslike_op(node)
 
     # Special note on initializing gradient of output_node as oneslike_op(output_node):
     # We are really taking a derivative of the scalar reduce_sum(output_node)
     # instead of the vector output_node. But this is the common case for loss function.
-    node_to_output_grad[output_node] = oneslike_op(output_node)
+    # dy/dy = 1  最后一个节点的梯度 肯定是 1
+    node_to_output_grad[output_node] = oneslike_op(output_node)  # oneslike_op is a NODE !!!
 
-    for node in reverse_topo_order:
+    for node in reverse_topo_order: #反向图 !!
+
+        ###### node.op.graident 输出是什么?
+        ###### gradient(node, current_grad)   dL/dnode = current_grad
+        #####output:     dL/dinput1 = dL/dnode * dnode/dinput1
+                                 #  = current_grad * dnode/dinput1
+        ###  a + b = c
+        ###  a * d = e   dL/dc* dc/da   + dL/de * de/dc
         for inp, grad in zip(node.inputs, node.op.gradient(node, node_to_output_grad[node])):
-            node_to_output_grad[inp] = node_to_output_grad[inp] + grad
+            node_to_output_grad[inp] = node_to_output_grad[inp] + grad   ## +  will build a new NODE !!!!
     # Collect results for gradients requested.
     grad_node_list = [node_to_output_grad[node] for node in node_list]
     return grad_node_list
